@@ -21,7 +21,17 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="bftm\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Blade_Fatigue_Test_Manager.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="bftm\" />
+    <Folder Include="bftm\core\" />
+    <Folder Include="bftm\gui\" />
+    <Folder Include="bftm\media\" />
+    <Folder Include="bftm\doc\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
