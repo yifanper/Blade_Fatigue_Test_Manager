@@ -1,3 +1,3 @@
 # Copyright ZHANG Yifan
 
-from . import gui
+from . import main_window

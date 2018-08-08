@@ -4,13 +4,14 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>c9b5bfc8-9174-43c2-ae89-43a78343e6dc</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>Blade_Fatigue_Test_Manager.py</StartupFile>
+    <StartupFile>Blade_Fatigue_Test_Manager.pyw</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <Name>Blade_Fatigue_Test_Manager</Name>
     <RootNamespace>Blade_Fatigue_Test_Manager</RootNamespace>
+    <InterpreterId>Global|ContinuumAnalytics|Anaconda36-64</InterpreterId>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -21,10 +22,16 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="bftm\gui\main_window.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="bftm\gui\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="bftm\__init__.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Blade_Fatigue_Test_Manager.py" />
+    <Compile Include="Blade_Fatigue_Test_Manager.pyw" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="bftm\" />
@@ -32,6 +39,11 @@
     <Folder Include="bftm\gui\" />
     <Folder Include="bftm\media\" />
     <Folder Include="bftm\doc\" />
+  </ItemGroup>
+  <ItemGroup>
+    <InterpreterReference Include="Global|ContinuumAnalytics|Anaconda36-64" />
+    <InterpreterReference Include="Global|PythonCore|2.7" />
+    <InterpreterReference Include="Global|PythonCore|3.6" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
