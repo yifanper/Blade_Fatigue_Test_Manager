@@ -1,4 +1,8 @@
-#Copyright ZHANG Yifan
+'''
+Copyright ZHANG Yifan
+Email: yifanper@hotmail.com
+Wechat: yifaner
+'''
 
 from PyQt5.QtWidgets import *
 import sys

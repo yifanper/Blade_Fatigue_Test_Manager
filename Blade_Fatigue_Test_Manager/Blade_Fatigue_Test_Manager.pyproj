@@ -22,10 +22,28 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="bftm\core\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="bftm\gui\data_tree.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="bftm\gui\main_window.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="bftm\gui\menu_bar.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="bftm\gui\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="bftm\mdb.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="bftm\media\img.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="bftm\media\__init__.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="bftm\__init__.py">
@@ -41,9 +59,8 @@
     <Folder Include="bftm\doc\" />
   </ItemGroup>
   <ItemGroup>
+    <InterpreterReference Include="Global|ContinuumAnalytics|Anaconda27-64" />
     <InterpreterReference Include="Global|ContinuumAnalytics|Anaconda36-64" />
-    <InterpreterReference Include="Global|PythonCore|2.7" />
-    <InterpreterReference Include="Global|PythonCore|3.6" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
