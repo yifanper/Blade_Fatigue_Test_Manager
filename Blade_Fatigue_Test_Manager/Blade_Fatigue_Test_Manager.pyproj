@@ -25,13 +25,25 @@
     <Compile Include="bftm\core\__init__.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="bftm\gui\background_tab.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="bftm\gui\data_tree.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="bftm\gui\import_strain_dia.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="bftm\gui\main_window.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="bftm\gui\menu_bar.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="bftm\gui\project_overview_tab.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="bftm\gui\wp_stack.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="bftm\gui\__init__.py">
@@ -61,6 +73,22 @@
   <ItemGroup>
     <InterpreterReference Include="Global|ContinuumAnalytics|Anaconda27-64" />
     <InterpreterReference Include="Global|ContinuumAnalytics|Anaconda36-64" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="bftm\env.ini">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="bftm\media\background.svg" />
+    <Content Include="bftm\media\cross_grey.svg" />
+    <Content Include="bftm\media\cross_red.svg" />
+    <Content Include="bftm\media\icon.ico" />
+    <Content Include="bftm\media\info_blue.svg" />
+    <Content Include="bftm\media\path.inf">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="bftm\media\question_blue.svg" />
+    <Content Include="bftm\media\question_orange.svg" />
+    <Content Include="bftm\media\warning_yellow.svg" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
