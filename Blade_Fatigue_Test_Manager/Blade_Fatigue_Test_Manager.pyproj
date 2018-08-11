@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>c9b5bfc8-9174-43c2-ae89-43a78343e6dc</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>Blade_Fatigue_Test_Manager.pyw</StartupFile>
+    <StartupFile>unit_test\test_parser_1.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -22,6 +22,12 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="bftm\core\common.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="bftm\core\parser.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="bftm\core\__init__.py">
       <SubType>Code</SubType>
     </Compile>
@@ -62,6 +68,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Blade_Fatigue_Test_Manager.pyw" />
+    <Compile Include="unit_test\test_parser_1.py">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="bftm\" />
@@ -69,6 +78,7 @@
     <Folder Include="bftm\gui\" />
     <Folder Include="bftm\media\" />
     <Folder Include="bftm\doc\" />
+    <Folder Include="unit_test\" />
   </ItemGroup>
   <ItemGroup>
     <InterpreterReference Include="Global|ContinuumAnalytics|Anaconda27-64" />

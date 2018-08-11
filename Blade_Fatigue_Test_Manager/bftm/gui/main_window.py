@@ -20,7 +20,7 @@ from . import menu_bar
 class MainWindow(QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
-        self.setWindowTitle('叶片疲劳测试数据处理系统')
+        self.setWindowTitle(core.common.WindowTitle())
         img_path=media.img.ImgPath()
         self.setWindowIcon(img_path.main_icon)
         self.IniLayoutElements()

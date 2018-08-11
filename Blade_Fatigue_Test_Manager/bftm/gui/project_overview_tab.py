@@ -11,6 +11,7 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 
 from .. import mdb
+from .. import core
 from . import import_strain_dia
 
 class ProjectOverviewTab():
@@ -19,7 +20,8 @@ class ProjectOverviewTab():
         self.DrawTab()
 
     def IniUIElements(self):
-        self.import_data_button=QPushButton('Import Data')
+        text=('Import Strain','导入应变数据')
+        self.import_data_button=QPushButton(core.common.trans(text))
         self.import_data_button.setFixedWidth(200)
         self.import_data_button.clicked.connect(self.ImportStrainButtonClicked)
 
