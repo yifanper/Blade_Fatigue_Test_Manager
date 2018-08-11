@@ -8,6 +8,16 @@ import os
 import scipy.fftpack
 import scipy.optimize
 import numpy
+import time
+
+#For debug only
+def PerformanceAnalysis(func):
+    def func_wrapper(*args, **kwargs):
+        starting_time=time.time()
+        flag=func(*args, **kwargs)
+        print('time=%f' %(time.time()-starting_time))
+        return flag
+    return func_wrapper
 
 def ParseStrainFile(path,format_type,ori_obj):
     #Determine readability
@@ -47,6 +57,7 @@ def ReadHeaderInfo_1(f):
     header['channels']=line_elements[1:]
     return header
 
+@PerformanceAnalysis
 def ReadStrain_1(f,channels):
     #strain['channel name']
     #      ['time']
@@ -82,6 +93,7 @@ def Frequency(descrete,samp_freq):
     freq=xf[yf2.index(max(yf2))]
     return freq
 
+@PerformanceAnalysis
 def SineFit(descrete,samp_freq,freq):
     point_no=len(descrete)
     time_interval=1.0/float(samp_freq)
