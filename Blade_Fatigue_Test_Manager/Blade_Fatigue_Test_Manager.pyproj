@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>c9b5bfc8-9174-43c2-ae89-43a78343e6dc</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>unit_test\test_parser_1.py</StartupFile>
+    <StartupFile>Blade_Fatigue_Test_Manager.pyw</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -23,6 +23,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="bftm\core\common.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="bftm\core\db.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="bftm\core\parser.py">
@@ -69,6 +72,9 @@
     </Compile>
     <Compile Include="Blade_Fatigue_Test_Manager.pyw" />
     <Compile Include="unit_test\test_parser_1.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="unit_test\tmp.py">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>

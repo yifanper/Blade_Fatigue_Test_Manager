@@ -6,27 +6,36 @@ Wechat: yifaner
 
 import os
 import scipy.fftpack
+import scipy.optimize
 import numpy
-import time
 
-def ParseStrainFile_1(path):
+def ParseStrainFile(path,format_type,ori_obj):
+    #Determine readability
     readability=os.access(path,os.R_OK)
     if not readability:
         return
+
+    #Read file
     with open(path,'r') as f:
-        header=ReadHeaderInfo_1(f)
-        strain=ReadStrain_1(f,header['channels'])
-        freq=[]
-        for n in header['channels']:
-            freq.append(Frequency(strain[n],header['sampling']))
-    return freq
+        if format_type=='a':
+            header=ReadHeaderInfo_1(f)
+            strain=ReadStrain_1(f,header['channels'])
+
+    #Data processing
+    time_interval=300.0
+    points=int(time_interval*header['sampling'])
+    freq=[]
+    freq.append(Frequency(strain['2-1'],header['sampling']))
+    flag=SineFit(strain['2-1'][:1000],header['sampling'],freq[0])
+    print(freq)
+    ori_obj.StrainParsingFinishedRedirector(flag)
 
 def ReadHeaderInfo_1(f):
     #header['starting_time']
     #      ['sampling']
     #      ['channels']
     header={}
-    f.readline()
+    #f.readline()
     line_content=f.readline()
     sampling_str=''
     for n in line_content:
@@ -72,3 +81,19 @@ def Frequency(descrete,samp_freq):
         yf2.append(2.0/value_no_f*numpy.abs(yf[n]))
     freq=xf[yf2.index(max(yf2))]
     return freq
+
+def SineFit(descrete,samp_freq,freq):
+    point_no=len(descrete)
+    time_interval=1.0/float(samp_freq)
+    t=numpy.linspace(0.0,time_interval*float(point_no),point_no,endpoint=False)
+    ini_amp=(max(descrete)-min(descrete))/2.0
+    ini_mean=numpy.mean(descrete)
+    w=2.0*numpy.pi*freq
+    ini_phase=0.0
+
+    fit_function=lambda x: x[0]*numpy.sin(w*t+x[1])+x[2]-descrete
+    fit_amp,fit_phase,fit_mean=scipy.optimize.leastsq(fit_function,[ini_amp,ini_phase,ini_mean])[0]
+    return [fit_amp,fit_phase,fit_mean]
+
+def JumpFilter():
+    return

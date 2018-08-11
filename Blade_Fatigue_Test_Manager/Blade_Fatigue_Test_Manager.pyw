@@ -21,6 +21,9 @@ if os.path.isfile(ini_path):
     except:
         pass
 
+#Start the mdb
+bftm.core.db.StartMDB()
+
 #Start the GUI
 app=QApplication(sys.argv)
 bftm.mdb.window=bftm.gui.main_window.MainWindow()
