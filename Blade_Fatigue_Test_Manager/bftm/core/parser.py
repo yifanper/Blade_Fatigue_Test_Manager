@@ -31,28 +31,36 @@ def ParseStrainFile(path,format_type,ori_obj):
             header=ReadHeaderInfo_1(f)
             strain=ReadStrain_1(f,header['channels'])
 
+    #Define interface variable
+    sd={'starting_time':header['starting_time'],'sampling':header['sampling'],\
+    'channels':header['channels'],'intervals':[]}
+
     #Data processing
     time_interval=300.0
     points=int(time_interval*header['sampling'])
     total_point_no=len(strain['time'])
-    processed={}
+    full_interval_no=int(total_point_no/points)
+    sd['intervals']=[]
+    sd['channels']={}
     for n in header['channels']:
-        processed[n]={'freqency':[],'amplitude':[],'mean':[],'phase':[]}
-        full_interval_no=int(total_point_no/points)
+        sd['channels'][n]={'frequency':[],'amplitude':[],'mean':[],'phase':[]}
         for m in range(0,full_interval_no):
-            pass
-    freq=[]
-    freq.append(Frequency(strain['2-1'],header['sampling']))
-    [amp,phase,mean]=SineFit(strain['2-1'][:1000],header['sampling'],freq[0])
-    [t_filted,descrete_filted,avg_dif_ori]=JumpFilter(strain['2-1'][:1000],header['sampling'],freq[0],amp,phase,mean)
-    [fit_amp,fit_phase,fit_mean]=FiltedSineFit(t_filted,descrete_filted,freq[0],amp,phase,mean)
-    new_dif=Deviation(t_filted,descrete_filted,freq[0],fit_amp,fit_phase,fit_mean)
-    print('amp dif=%f' %(amp-fit_amp))
-    print('phase dif=%f' %(phase-fit_phase))
-    print('mean dif=%f' %(mean-fit_mean))
-    print('ori_dif=%f ;new_dif=%f' %(avg_dif_ori,new_dif))
-    if not ori_obj==None:
+            descrete_slice=strain[n][m*points:(m+1)*points]
+            freq=Frequency(descrete_slice,header['sampling'])
+            [amp,phase,mean]=GetCurvePara(descrete_slice,header['sampling'],freq)
+            sd['channels'][n]['frequency'].append(freq)
+            sd['channels'][n]['amplitude'].append(amp)
+            sd['channels'][n]['mean'].append(mean)
+            sd['channels'][n]['phase'].append(phase+float(m)*300.0)
+        descrete_slice=strain[n][full_interval_no*points:]
+        freq=Frequency(descrete_slice,header['sampling'])
+        [amp,phase,mean]=GetCurvePara(descrete_slice,header['sampling'],freq)
+
+    #Return to GUI
+    if not ori_obj=='unit_test':
         ori_obj.StrainParsingFinishedRedirector(flag)
+    else:
+        return sd
 
     '''
     Interface:
@@ -85,7 +93,7 @@ def ReadHeaderInfo_1(f):
     header['channels']=line_elements[1:]
     return header
 
-@PerformanceAnalysis
+#@PerformanceAnalysis
 def ReadStrain_1(f,channels):
     #strain['channel name']
     #      ['time']
@@ -121,7 +129,7 @@ def Frequency(descrete,samp_freq):
     freq=xf[yf2.index(max(yf2))]
     return freq
 
-@PerformanceAnalysis
+#@PerformanceAnalysis
 def SineFit(descrete,samp_freq,freq):
     point_no=len(descrete)
     time_interval=1.0/float(samp_freq)
@@ -164,3 +172,15 @@ def Deviation(t_filted,descrete_filted,freq,fit_amp,fit_phase,fit_mean):
     dif=abs(fit_amp*numpy.sin(w*t_filted+fit_phase)+fit_mean-descrete_filted)
     new_avg_dif=numpy.mean(dif)
     return new_avg_dif
+
+def GetCurvePara(descrete_slice,sampling,freq):
+    [amp_ini,phase_ini,mean_ini]=SineFit(descrete_slice,sampling,freq)
+    [t_filted,descrete_filted,avg_dif_ori]=\
+    JumpFilter(descrete_slice,sampling,freq,amp_ini,phase_ini,mean_ini)
+    [amp_fit,phase_fit,mean_fit]=FiltedSineFit\
+    (t_filted,descrete_filted,freq,amp_ini,phase_ini,mean_ini)
+    avg_dif_new=Deviation(t_filted,descrete_filted,freq,amp_fit,phase_fit,mean_fit)
+    if avg_dif_new<avg_dif_ori:
+        return [amp_fit,phase_fit,mean_fit]
+    else:
+        return [amp_ini,phase_ini,mean_ini]
