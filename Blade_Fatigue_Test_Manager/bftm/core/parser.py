@@ -34,17 +34,45 @@ def ParseStrainFile(path,format_type,ori_obj):
     #Data processing
     time_interval=300.0
     points=int(time_interval*header['sampling'])
+    total_point_no=len(strain['time'])
+    processed={}
+    for n in header['channels']:
+        processed[n]={'freqency':[],'amplitude':[],'mean':[],'phase':[]}
+        full_interval_no=int(total_point_no/points)
+        for m in range(0,full_interval_no):
+            pass
     freq=[]
     freq.append(Frequency(strain['2-1'],header['sampling']))
-    flag=SineFit(strain['2-1'][:1000],header['sampling'],freq[0])
-    print(freq)
-    ori_obj.StrainParsingFinishedRedirector(flag)
+    [amp,phase,mean]=SineFit(strain['2-1'][:1000],header['sampling'],freq[0])
+    [t_filted,descrete_filted,avg_dif_ori]=JumpFilter(strain['2-1'][:1000],header['sampling'],freq[0],amp,phase,mean)
+    [fit_amp,fit_phase,fit_mean]=FiltedSineFit(t_filted,descrete_filted,freq[0],amp,phase,mean)
+    new_dif=Deviation(t_filted,descrete_filted,freq[0],fit_amp,fit_phase,fit_mean)
+    print('amp dif=%f' %(amp-fit_amp))
+    print('phase dif=%f' %(phase-fit_phase))
+    print('mean dif=%f' %(mean-fit_mean))
+    print('ori_dif=%f ;new_dif=%f' %(avg_dif_ori,new_dif))
+    if not ori_obj==None:
+        ori_obj.StrainParsingFinishedRedirector(flag)
+
+    '''
+    Interface:
+    dic['starting_time']=float
+       ['sampling']=int
+       ['md5']=tuple
+       ['intervals']=tuple
+       ['channels']=tuple
+       ['channel']['channel_name']['freqency']['interval_no']=float
+                                  ['amplitude']['interval_no']=float
+                                  ['mean']['interval_no']=float
+                                  ['phase']['interval_no']=float
+    '''
 
 def ReadHeaderInfo_1(f):
     #header['starting_time']
     #      ['sampling']
     #      ['channels']
     header={}
+    header['starting_time']=None
     #f.readline()
     line_content=f.readline()
     sampling_str=''
@@ -107,5 +135,32 @@ def SineFit(descrete,samp_freq,freq):
     fit_amp,fit_phase,fit_mean=scipy.optimize.leastsq(fit_function,[ini_amp,ini_phase,ini_mean])[0]
     return [fit_amp,fit_phase,fit_mean]
 
-def JumpFilter():
-    return
+def JumpFilter(descrete,samp_freq,freq,amp,phase,mean):
+    point_no=len(descrete)
+    time_interval=1.0/float(samp_freq)
+    w=2.0*numpy.pi*freq
+    t_full=numpy.linspace(0.0,time_interval*float(point_no),point_no,endpoint=False)
+    dif=abs(amp*numpy.sin(w*t_full+phase)+mean-descrete)
+    avg_dif=numpy.mean(dif)
+    threshold=2.0*(2.0**0.5)*avg_dif
+    t_filted=[]
+    descrete_filted=[]
+    for n in range(0,len(t_full)):
+        if dif[n]<threshold:
+            t_filted.append(t_full[n])
+            descrete_filted.append(descrete[n])
+    return [t_filted,descrete_filted,avg_dif]
+
+def FiltedSineFit(t_filted,descrete_filted,freq,ini_amp,ini_phase,ini_mean):
+    w=2.0*numpy.pi*freq
+    t_filted=numpy.array(t_filted)
+    fit_function=lambda x: x[0]*numpy.sin(w*t_filted+x[1])+x[2]-descrete_filted
+    fit_amp,fit_phase,fit_mean=scipy.optimize.leastsq(fit_function,[ini_amp,ini_phase,ini_mean])[0]
+    return [fit_amp,fit_phase,fit_mean]
+
+def Deviation(t_filted,descrete_filted,freq,fit_amp,fit_phase,fit_mean):
+    w=2.0*numpy.pi*freq
+    t_filted=numpy.array(t_filted)
+    dif=abs(fit_amp*numpy.sin(w*t_filted+fit_phase)+fit_mean-descrete_filted)
+    new_avg_dif=numpy.mean(dif)
+    return new_avg_dif

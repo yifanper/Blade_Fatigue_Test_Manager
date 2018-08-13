@@ -2,6 +2,6 @@
 
 import bftm
 
-path='D:\\BaiduNetdiskDownload\\各家疲劳试验数据\\20180426-1.txt'
-flag=bftm.core.parser.ParseStrainFile(path)
+path='D:\\BaiduNetdiskDownload\\各家疲劳试验数据\\D161103H0200.txt'
+flag=bftm.core.parser.ParseStrainFile(path,'a',None)
 print(flag)
