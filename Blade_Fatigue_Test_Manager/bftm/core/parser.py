@@ -40,25 +40,30 @@ def ParseStrainFile(path,format_type,ori_obj):
     points=int(time_interval*header['sampling'])
     total_point_no=len(strain['time'])
     full_interval_no=int(total_point_no/points)
-    sd['intervals']=[]
+    sd['intervals']=[time_interval*float(n) for n in range(0,full_interval_no)]
+    sd['intervals'].append(float(total_point_no)/float(header['sampling']))
     sd['channels']={}
     for n in header['channels']:
         sd['channels'][n]={'frequency':[],'amplitude':[],'mean':[],'phase':[]}
         for m in range(0,full_interval_no):
-            descrete_slice=strain[n][m*points:(m+1)*points]
-            freq=Frequency(descrete_slice,header['sampling'])
-            [amp,phase,mean]=GetCurvePara(descrete_slice,header['sampling'],freq)
+            discrete_slice=strain[n][m*points:(m+1)*points]
+            freq=Frequency(discrete_slice,header['sampling'])
+            [amp,phase,mean]=GetCurvePara(discrete_slice,header['sampling'],freq)
             sd['channels'][n]['frequency'].append(freq)
             sd['channels'][n]['amplitude'].append(amp)
             sd['channels'][n]['mean'].append(mean)
-            sd['channels'][n]['phase'].append(phase+float(m)*300.0)
-        descrete_slice=strain[n][full_interval_no*points:]
-        freq=Frequency(descrete_slice,header['sampling'])
-        [amp,phase,mean]=GetCurvePara(descrete_slice,header['sampling'],freq)
+            sd['channels'][n]['phase'].append(phase)
+        discrete_slice=strain[n][full_interval_no*points:]
+        freq=Frequency(discrete_slice,header['sampling'])
+        [amp,phase,mean]=GetCurvePara(discrete_slice,header['sampling'],freq)
+        sd['channels'][n]['frequency'].append(freq)
+        sd['channels'][n]['amplitude'].append(amp)
+        sd['channels'][n]['mean'].append(mean)
+        sd['channels'][n]['phase'].append(phase)
 
     #Return to GUI
     if not ori_obj=='unit_test':
-        ori_obj.StrainParsingFinishedRedirector(flag)
+        ori_obj.StrainParsingFinishedRedirector(sd)
     else:
         return sd
 
@@ -111,13 +116,13 @@ def ReadStrain_1(f,channels):
             strain[channels[n]].append(float(line_elements[n+1]))
     return strain
 
-def Frequency(descrete,samp_freq):
-    #descrete is a tuple of strains
+def Frequency(discrete,samp_freq):
+    #discrete is a tuple of strains
     #samp_freq is a float indicating sampling frequency [Hz]
-    value_no=len(descrete)
+    value_no=len(discrete)
     value_no_f=float(value_no)
     x=(float(n)/samp_freq for n in range(0,value_no))
-    yf=scipy.fftpack.fft(descrete)
+    yf=scipy.fftpack.fft(discrete)
     xf=[]
     sample_time=1.0/samp_freq
     for n in range(0,int(value_no/2)):
@@ -130,56 +135,56 @@ def Frequency(descrete,samp_freq):
     return freq
 
 #@PerformanceAnalysis
-def SineFit(descrete,samp_freq,freq):
-    point_no=len(descrete)
+def SineFit(discrete,samp_freq,freq):
+    point_no=len(discrete)
     time_interval=1.0/float(samp_freq)
     t=numpy.linspace(0.0,time_interval*float(point_no),point_no,endpoint=False)
-    ini_amp=(max(descrete)-min(descrete))/2.0
-    ini_mean=numpy.mean(descrete)
+    ini_amp=(max(discrete)-min(discrete))/2.0
+    ini_mean=numpy.mean(discrete)
     w=2.0*numpy.pi*freq
-    ini_phase=0.0
+    ini_phase=0.0 #A better initial estimation of phase is to be implemented.
 
-    fit_function=lambda x: x[0]*numpy.sin(w*t+x[1])+x[2]-descrete
+    fit_function=lambda x: x[0]*numpy.sin(w*t+x[1])+x[2]-discrete
     fit_amp,fit_phase,fit_mean=scipy.optimize.leastsq(fit_function,[ini_amp,ini_phase,ini_mean])[0]
     return [fit_amp,fit_phase,fit_mean]
 
-def JumpFilter(descrete,samp_freq,freq,amp,phase,mean):
-    point_no=len(descrete)
+def JumpFilter(discrete,samp_freq,freq,amp,phase,mean):
+    point_no=len(discrete)
     time_interval=1.0/float(samp_freq)
     w=2.0*numpy.pi*freq
     t_full=numpy.linspace(0.0,time_interval*float(point_no),point_no,endpoint=False)
-    dif=abs(amp*numpy.sin(w*t_full+phase)+mean-descrete)
+    dif=abs(amp*numpy.sin(w*t_full+phase)+mean-discrete)
     avg_dif=numpy.mean(dif)
     threshold=2.0*(2.0**0.5)*avg_dif
     t_filted=[]
-    descrete_filted=[]
+    discrete_filted=[]
     for n in range(0,len(t_full)):
         if dif[n]<threshold:
             t_filted.append(t_full[n])
-            descrete_filted.append(descrete[n])
-    return [t_filted,descrete_filted,avg_dif]
+            discrete_filted.append(discrete[n])
+    return [t_filted,discrete_filted,avg_dif]
 
-def FiltedSineFit(t_filted,descrete_filted,freq,ini_amp,ini_phase,ini_mean):
+def FiltedSineFit(t_filted,discrete_filted,freq,ini_amp,ini_phase,ini_mean):
     w=2.0*numpy.pi*freq
     t_filted=numpy.array(t_filted)
-    fit_function=lambda x: x[0]*numpy.sin(w*t_filted+x[1])+x[2]-descrete_filted
+    fit_function=lambda x: x[0]*numpy.sin(w*t_filted+x[1])+x[2]-discrete_filted
     fit_amp,fit_phase,fit_mean=scipy.optimize.leastsq(fit_function,[ini_amp,ini_phase,ini_mean])[0]
     return [fit_amp,fit_phase,fit_mean]
 
-def Deviation(t_filted,descrete_filted,freq,fit_amp,fit_phase,fit_mean):
+def Deviation(t_filted,discrete_filted,freq,fit_amp,fit_phase,fit_mean):
     w=2.0*numpy.pi*freq
     t_filted=numpy.array(t_filted)
-    dif=abs(fit_amp*numpy.sin(w*t_filted+fit_phase)+fit_mean-descrete_filted)
+    dif=abs(fit_amp*numpy.sin(w*t_filted+fit_phase)+fit_mean-discrete_filted)
     new_avg_dif=numpy.mean(dif)
     return new_avg_dif
 
-def GetCurvePara(descrete_slice,sampling,freq):
-    [amp_ini,phase_ini,mean_ini]=SineFit(descrete_slice,sampling,freq)
-    [t_filted,descrete_filted,avg_dif_ori]=\
-    JumpFilter(descrete_slice,sampling,freq,amp_ini,phase_ini,mean_ini)
+def GetCurvePara(discrete_slice,sampling,freq):
+    [amp_ini,phase_ini,mean_ini]=SineFit(discrete_slice,sampling,freq)
+    [t_filted,discrete_filted,avg_dif_ori]=\
+    JumpFilter(discrete_slice,sampling,freq,amp_ini,phase_ini,mean_ini)
     [amp_fit,phase_fit,mean_fit]=FiltedSineFit\
-    (t_filted,descrete_filted,freq,amp_ini,phase_ini,mean_ini)
-    avg_dif_new=Deviation(t_filted,descrete_filted,freq,amp_fit,phase_fit,mean_fit)
+    (t_filted,discrete_filted,freq,amp_ini,phase_ini,mean_ini)
+    avg_dif_new=Deviation(t_filted,discrete_filted,freq,amp_fit,phase_fit,mean_fit)
     if avg_dif_new<avg_dif_ori:
         return [amp_fit,phase_fit,mean_fit]
     else:

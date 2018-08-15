@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>c9b5bfc8-9174-43c2-ae89-43a78343e6dc</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>unit_test\test_parser_1.py</StartupFile>
+    <StartupFile>Blade_Fatigue_Test_Manager.pyw</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>

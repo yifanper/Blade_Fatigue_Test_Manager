@@ -10,9 +10,14 @@ from .. import mdb
 
 def trans(text_list):
     if mdb.language=='ch':
-        return text_list[1]
+        index=1
     else:
-        return text_list[0]
+        index=0
+
+    if type(text_list[0])==type('wtf'):
+        return text_list[index]
+    elif type(text_list[0])==type([]) or type(text_list[0])==type((0,0)):
+        return [n[index] for n in text_list]
 
 def ProgramVersionStr():
     version_str='%d.%d.%d' %(mdb.version[0],mdb.version[1],mdb.version[2])
