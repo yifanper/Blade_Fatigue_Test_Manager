@@ -25,6 +25,7 @@ class ImportStrainDataDialog(QDialog):
     def __init__(self,parent):
         super(ImportStrainDataDialog, self).__init__(parent)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+        self.setMinimumSize(800,600)
         text=('Import Strain Data Wizard','导入应变数据向导')
         self.setWindowTitle(core.common.trans(text))
         self.IniUIElements()
@@ -33,7 +34,7 @@ class ImportStrainDataDialog(QDialog):
     def IniUIElements(self):
         text=('Browse File','选择文件')
         self.browse_button=QPushButton(core.common.trans(text))
-        self.browse_button.setFixedWidth(200)
+        self.browse_button.setFixedWidth(150)
         self.browse_button.clicked.connect(self.BrowseButtonClicked)
 
         self.file_table=QTableWidget(2,2)
@@ -57,6 +58,12 @@ class ImportStrainDataDialog(QDialog):
         self.cancel_button=QPushButton(core.common.trans(text))
         self.cancel_button.setFixedWidth(100)
 
+        self.data_processing_table=QTableWidget(2,2)
+        header=(('File Names','文件名'),('Status','进度'))
+        self.data_processing_table.setHorizontalHeaderLabels(core.common.trans(header))
+        self.data_processing_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.data_processing_table.setSelectionBehavior(QAbstractItemView.SelectRows)
+
     def DrawLayout(self):
         tree_layout=QVBoxLayout()
         self.tree=WizardTree()
@@ -65,6 +72,10 @@ class ImportStrainDataDialog(QDialog):
         tree_layout.addStretch()
 
         self.stack=QStackedWidget()
+        self.stack.addWidget(self.BrowseFileStackWidget())
+        self.stack.addWidget(self.ProcessDataStackWidget())
+
+        self.stack.setCurrentIndex(1)
 
         top_layout=QHBoxLayout()
         top_layout.addLayout(tree_layout)
@@ -91,7 +102,30 @@ class ImportStrainDataDialog(QDialog):
         self.setLayout(dia_layout)
 
     def BrowseFileStackWidget(self):
-        pass
+        button_layout=QVBoxLayout()
+        #button_layout.addStretch()
+        button_layout.addWidget(self.browse_button)
+
+        lower_layout=QHBoxLayout()
+        lower_layout.addStretch()
+        lower_layout.addLayout(button_layout)
+
+        tab_layout=QVBoxLayout()
+        tab_layout.addWidget(self.file_table)
+        tab_layout.addLayout(lower_layout)
+
+        text=('Strain Data File Selection','选择应变数据文件')
+        tab_group=QGroupBox(core.common.trans(text))
+        tab_group.setLayout(tab_layout)
+        return tab_group
+
+    def ProcessDataStackWidget(self):
+        tab_layout=QVBoxLayout()
+        tab_layout.addWidget(self.data_processing_table)
+
+        tab_widget=QWidget()
+        tab_widget.setLayout(tab_layout)
+        return tab_widget
 
     def BrowseButtonClicked(self):
         text1=('Select a Strain Data File','请选择应变数据文件')
@@ -106,8 +140,8 @@ class ImportStrainDataDialog(QDialog):
         file_no=len(path[0])
         self.file_table.setRowCount(file_no)
         for n in range(0,file_no):
-            file_name=os.path.splitext(path[0][n])
-            file_name=file_name[0]+file_name[1]
+            file_name=path[0][n]
+            file_name=file_name.split('/')[-1]
             cell_item=QTableWidgetItem('%s' %file_name)
             self.file_table.setItem(n,0,cell_item)
             cell_item=TypeComboGenerator()
@@ -121,15 +155,16 @@ class WizardTree():
         self.items=[]
         text=('Browse Files','选择文件')
         self.items.append(QLabel(core.common.trans(text)))
-        self.items.append(QLabel('step 2'))
+        text=('Data Processing','数据处理')
+        self.items.append(QLabel(core.common.trans(text)))
         self.SetCurrentStep(0)
 
     def SetCurrentStep(self,current_step):
         if current_step<0 or current_step>=len(self.items):
             return
-        done_font=QFont("Times", 8, QFont.Normal)
-        current_font=QFont("Times", 8, QFont.Bold)
-        todo_font=QFont("Times", 8, QFont.Normal)
+        done_font=QFont("Times", 10, QFont.Normal)
+        current_font=QFont("Times", 10, QFont.Bold)
+        todo_font=QFont("Times", 10, QFont.Normal)
         for n in range(0,len(self.items)):
             if n<current_step:
                 self.items[n].setFont(done_font)
