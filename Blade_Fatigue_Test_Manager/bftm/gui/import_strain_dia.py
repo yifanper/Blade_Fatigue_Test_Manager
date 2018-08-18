@@ -25,7 +25,7 @@ class ImportStrainDataDialog(QDialog):
     def __init__(self,parent):
         super(ImportStrainDataDialog, self).__init__(parent)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
-        text=('Import Strain Data','导入应变数据')
+        text=('Import Strain Data Wizard','导入应变数据向导')
         self.setWindowTitle(core.common.trans(text))
         self.IniUIElements()
         self.DrawLayout()
@@ -44,12 +44,54 @@ class ImportStrainDataDialog(QDialog):
         self.file_table.setColumnWidth(0,300)
         self.file_table.setColumnWidth(1,200)
 
+        text=('Back','上一步')
+        self.back_button=QPushButton(core.common.trans(text))
+        self.back_button.setFixedWidth(100)
+        self.back_button.setDisabled(True)
+
+        text=('Next','下一步')
+        self.next_button=QPushButton(core.common.trans(text))
+        self.next_button.setFixedWidth(100)
+
+        text=('Cancel','取消')
+        self.cancel_button=QPushButton(core.common.trans(text))
+        self.cancel_button.setFixedWidth(100)
+
     def DrawLayout(self):
-        dia_layout=QHBoxLayout()
-        dia_layout.addStretch()
-        dia_layout.addWidget(self.file_table)
-        dia_layout.addWidget(self.browse_button)
+        tree_layout=QVBoxLayout()
+        self.tree=WizardTree()
+        for n in self.tree.items:
+            tree_layout.addWidget(n)
+        tree_layout.addStretch()
+
+        self.stack=QStackedWidget()
+
+        top_layout=QHBoxLayout()
+        top_layout.addLayout(tree_layout)
+        v_separator=QFrame()
+        v_separator.setFrameShape(QFrame.VLine)
+        v_separator.setFrameShadow(QFrame.Sunken)
+        top_layout.addWidget(v_separator)
+        top_layout.addWidget(self.stack)
+
+        nav_layout=QHBoxLayout()
+        nav_layout.addStretch()
+        nav_layout.addWidget(self.back_button)
+        nav_layout.addWidget(self.next_button)
+        nav_layout.addWidget(self.cancel_button)
+
+        dia_layout=QVBoxLayout()
+        h_separator=QFrame()
+        h_separator.setFrameShape(QFrame.HLine)
+        h_separator.setFrameShadow(QFrame.Sunken)
+        dia_layout.addLayout(top_layout)
+        dia_layout.addWidget(h_separator)
+        dia_layout.addLayout(nav_layout)
+
         self.setLayout(dia_layout)
+
+    def BrowseFileStackWidget(self):
+        pass
 
     def BrowseButtonClicked(self):
         text1=('Select a Strain Data File','请选择应变数据文件')
@@ -73,6 +115,28 @@ class ImportStrainDataDialog(QDialog):
 
     def StrainParsingFinishedRedirector(self,result):
         pass
+
+class WizardTree():
+    def __init__(self):
+        self.items=[]
+        text=('Browse Files','选择文件')
+        self.items.append(QLabel(core.common.trans(text)))
+        self.items.append(QLabel('step 2'))
+        self.SetCurrentStep(0)
+
+    def SetCurrentStep(self,current_step):
+        if current_step<0 or current_step>=len(self.items):
+            return
+        done_font=QFont("Times", 8, QFont.Normal)
+        current_font=QFont("Times", 8, QFont.Bold)
+        todo_font=QFont("Times", 8, QFont.Normal)
+        for n in range(0,len(self.items)):
+            if n<current_step:
+                self.items[n].setFont(done_font)
+            elif n==current_step:
+                self.items[n].setFont(current_font)
+            else:
+                self.items[n].setFont(todo_font)
 
 class TypeComboGenerator(QComboBox):
     def __init__(self):
