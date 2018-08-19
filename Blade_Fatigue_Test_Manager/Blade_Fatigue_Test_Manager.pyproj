@@ -49,6 +49,9 @@
     <Compile Include="bftm\gui\menu_bar.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="bftm\gui\msg_box.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="bftm\gui\project_overview_tab.py">
       <SubType>Code</SubType>
     </Compile>

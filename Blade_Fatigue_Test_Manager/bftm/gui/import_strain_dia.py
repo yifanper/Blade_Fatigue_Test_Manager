@@ -14,6 +14,7 @@ import os
 from .. import media
 from .. import mdb
 from .. import core
+from . import msg_box
 
 #Python version dependent packages
 if mdb.python_version==3:
@@ -53,16 +54,22 @@ class ImportStrainDataDialog(QDialog):
         text=('Next','下一步')
         self.next_button=QPushButton(core.common.trans(text))
         self.next_button.setFixedWidth(100)
+        self.next_button.setDisabled(True)
 
         text=('Cancel','取消')
         self.cancel_button=QPushButton(core.common.trans(text))
         self.cancel_button.setFixedWidth(100)
+        self.cancel_button.clicked.connect(self.CancelButtonClicked)
 
         self.data_processing_table=QTableWidget(2,2)
         header=(('File Names','文件名'),('Status','进度'))
         self.data_processing_table.setHorizontalHeaderLabels(core.common.trans(header))
         self.data_processing_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.data_processing_table.setSelectionBehavior(QAbstractItemView.SelectRows)
+
+    def IniDB(self):
+        self.strain_files=[]
+        self.msg_box_action=None
 
     def DrawLayout(self):
         tree_layout=QVBoxLayout()
@@ -75,7 +82,7 @@ class ImportStrainDataDialog(QDialog):
         self.stack.addWidget(self.BrowseFileStackWidget())
         self.stack.addWidget(self.ProcessDataStackWidget())
 
-        self.stack.setCurrentIndex(1)
+        self.stack.setCurrentIndex(0)
 
         top_layout=QHBoxLayout()
         top_layout.addLayout(tree_layout)
@@ -146,9 +153,37 @@ class ImportStrainDataDialog(QDialog):
             self.file_table.setItem(n,0,cell_item)
             cell_item=TypeComboGenerator()
             self.file_table.setCellWidget(n,1,cell_item)
+            file_db={'path':file_name,'type':None}
+            self.strain_files.append(file_db)
 
     def StrainParsingFinishedRedirector(self,result):
         pass
+
+    def NextButtonAvailibility(self,page_index):
+        availibility=True
+        if page_index==0:
+            #Number of strain files shall greater than 0.
+            if len(self.strain_files)==0:
+                availibility=False
+            #All files shall be assigned with a format type.
+            for n in self.strain_files:
+                if n['type']==None:
+                    availibility=False
+        elif page_index==1:
+            pass
+        self.next_button.setDisabled(not availibility)
+
+    def MsgBoxInterface(self,flag):
+        if self.msg_box_action=='exit':
+            if flag:
+                self.close()
+
+    def CancelButtonClicked(self):
+        self.msg_box_action='exit'
+        msg=(('Data importing has not finished.','数据导入尚未完成，'),\
+        ('Data will loss if exit.','退出将丢失未导入的数据。'))
+        warning_box=msg_box.WarningBox(self,msg)
+        warning_box.exec_()
 
 class WizardTree():
     def __init__(self):
