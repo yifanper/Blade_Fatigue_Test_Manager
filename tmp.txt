@@ -209,3 +209,106 @@ fastener_env=[]
 
 #radius of the fastener marks in view
 radius=10.0
+
+
+
+import os
+
+import xlrd
+
+from .. import mdb
+
+def FetchFastenerInfo(wb):
+    # Fetch fastener information
+    #[id]['coordinate']=[x,y,z]
+    #    ['type']=str
+    #    ['zone']=str
+    rivet_info_sheet=wb.sheet_by_name('Rivet Info')
+    fastener_id=0
+    fasteners={}
+    row_no=rivet_info_sheet.nrows
+    for n in range(1,row_no):
+        #Determine end of the sheet
+        if rivet_info_sheet.cell(n,0).value=='':
+            break
+
+        #Store the information
+        fasteners[fastener_id]={}
+        fasteners[fastener_id]['type']=rivet_info_sheet.cell(n,5).value.upper()
+        xyz_columns=(6,7,8)
+        fasteners[fastener_id]['coordinate']=[]
+        for m in xyz_columns:
+            fasteners[fastener_id]['coordinate'].append(rivet_info_sheet.cell(n,m).value)
+        fasteners[fastener_id]['zone']=rivet_info_sheet.cell(n,10).value
+        fastener_id+=1
+    return fasteners
+
+def FetchFrames(wb):
+    #Fetch the Frames
+    #
+    fr_sheet=wb.sheet_by_name('FR')
+    frames=[]
+    row_no=fr_sheet.nrows
+    for n in range(1,row_no):
+        #Determine the end of the sheet
+        if fr_sheet.cell(n,0).value=='':
+            break
+
+        #Store the information
+        fr={}
+        fr['name']=fr_sheet.cell(n,0).value.upper()
+        fr['x']=float(fr_sheet.cell(n,1).value)
+        frames.append(fr)
+    return frames
+
+def FetchStringers(wb):
+    #Fetch the stringers
+    #
+    stgr_sheet=wb.sheet_by_name('STGR')
+
+    return
+
+def FetchZones(wb):
+    return
+
+def ParseDatabase(db_path):
+    #Open databse and the validity check
+    if not os.path.exists(db_path):
+        return [-1,'No database file fund.']
+    try:
+        wb=xlrd.open_workbook(db_path)
+    except:
+        return [-2,'Database broken.']
+    tabs=('Rivet Info','FR','STGR','Zone')
+    tab_names=wb.sheet_names()
+    for n in tabs:
+        if not n in tab_names:
+            return [-3,'Incomplete database.']
+
+    fasteners=FetchFastenerInfo(wb)
+    frames=FetchFrames(wb)
+    stringers=FetchStringers(wb)
+    zones=FetchZones(wb)
+    return [0,[fasteners,frames,stringers,zones]]
+
+def Parser():
+    db_path = mdb.package_path + '/data/database.xlsx'
+    [status,flag]=ParseDatabase(db_path)
+    if not status==0:
+        return []
+    [mdb.fasteners, mdb.frames, mdb.stringers, mdb.zones]=flag
+
+    #Find fasteners envelope
+    fastener_ids=mdb.fasteners.keys()
+    xyzs=[[],[],[]]
+    for n in fastener_ids:
+        coor=mdb.fasteners[n]['coordinate']
+        for m in range(0,len(coor)):
+            xyzs[m].append(coor[m])
+    mdb.fastener_env=[]
+    for n in range(0,len(xyzs)):
+        mdb.fastener_env.append([min(xyzs[n]),max(xyzs[n])])
+    print(mdb.fastener_env)
+
+    #Check existence of drawing picture
+    #to be done.
