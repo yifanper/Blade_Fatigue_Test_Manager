@@ -1,314 +1,144 @@
-#coding=utf-8
 
-#show different fastener mark for different fastener type.
+import scipy.interpolate
 
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
+def GetProjectorfromView(view_flag):
+    '''
+    This function is to define the projection parameters of
+    converting the fastener coordinates from 3D absolute
+    axis to 2D Graphicsview axis.
+    '''
 
-from .. import mdb
+    #projector = [[two axises to remain],[direction of the two axises],
+    #filter of the third axis]
+    projector=[]
 
-class FastenerSelectionTab():
-    def __init__(self):
-        self.IniParameters()
-        self.IniUIElements()
-        self.DrawTab()
+    if view_flag=='from_top':
+        projector=[[0,1],['along','reversed'],'positive']
+    elif view_flag=='from_bottom':
+        projector=[[0,1],['along','along'],'negative']
+    elif view_flag=='from_left':
+        projector=[[0,2],['along','along'],'negative']
+    elif view_flag=='from_right':
+        projector=[[0,2],['reversed','along'],'positive']
+    return projector
 
-    def IniParameters(self):
-        self.fastener_items=[]
-        self.fastener_pos=[]
-        self.projection_plane='xz'
+def ProjectFastenerbyPlane(fasteners,projector):
+    axises=[0,1,2]
+    for n in projector[0]:
+        axises.remove(n)
+    third_axis=axises[0]
 
-    def IniUIElements(self):
-        self.gview=FastenerViewer(mdb.window)
-        self.gscene=QGraphicsScene()
-        self.gview.setScene(self.gscene)
+    #f_projected['fastener_id']=[a.b]
+    f_projected={}
+    for n in fasteners.keys():
+        validity=False
+        if (projector[2]=='positive') and (fasteners[n]['coordinate'][third_axis]>=0):
+            validity=True
+        elif (projector[2]=='negative') and (fasteners[n]['coordinate'][third_axis]<=0):
+            validity=True
+        if validity:
+            coordinate_projected=[fasteners[n]['coordinate'][m] for m in projector[0]]
+            for m in range(0,2):
+                if projector[1][m]=='reversed':
+                    coordinate_projected[m]=-coordinate_projected[m]
+            f_projected[n]=coordinate_projected
+    return  f_projected
 
-        self.div_table=QTableWidget(1,2)
-        self.div_table.setFixedWidth(200)
+def ProjectSTGR(stringers,projector):
+    stgr_projected={}
+    for n in stringers.keys():
+        stgr_projected[n]=[]
+        for m in range(0,len(stringers[n])):
+            point=[]
+            for j in range(0,2):
+                point.append(stringers[n][m][projector[0][j]])
+                if projector[1][j]=='reversed':
+                    point[j]=-point[j]
+            stgr_projected[n].append(point)
+    return stgr_projected
 
-        self.up_button=QPushButton('Up')
-        self.down_button=QPushButton('Down')
-        self.delete_button=QPushButton('Delete')
-        self.projection_combo=QComboBox()
-        self.projection_combo.addItem('XZ Plane')
-        self.projection_combo.addItem('XY Plane')
-        self.projection_combo.setCurrentIndex(0)
+def FilterFastenerbySTGR(f_projected,boundary_stgr,stgr_projected):
+    #boundary_stgr=[upper_stgr_str,lower_stgr_str]
 
-    def DrawTab(self):
-        tab_layout=QHBoxLayout()
-        tab_layout.addWidget(self.div_table)
-        tab_layout.addWidget(self.gview)
+    ids=f_projected.keys()
+    #Step one, remove fasteners higher than the highest point
+    #of the upper boundary stringer; lower than the lowest
+    #point of the lower boundary stringer.
+    ids_out=[]
+    ys_upper=[]
+    for n in range(0,len(stgr_projected[boundary_stgr[0]])):
+        ys_upper.append(stgr_projected[boundary_stgr[0]][n][1])
+    ys_lower=[]
+    for n in range(0,len(stgr_projected[boundary_stgr[1]])):
+        ys_lower.append(stgr_projected[boundary_stgr[1]][n][1])
+    y_max=max(ys_upper)
+    y_min=min(ys_lower)
+    for n in ids:
+        if f_projected[n][1]>y_max or f_projected[n][1]<y_min:
+            ids_out.append(n)
 
-        self.tab_widget=QWidget()
-        self.tab_widget.setLayout(tab_layout)
+    #Step two, pass fasteners between the lower point of the
+    #upper boundary stringer and the upper point of the
+    #lower boundary stringer.
+    ids_in=[]
+    y_max=min(ys_upper)
+    y_min=max(ys_lower)
+    for n in ids:
+        if f_projected[n][1]<=y_max and f_projected[n][1]>=y_min:
+            ids_in.append(n)
 
-        self.ProjectFasteners('xz')
-        self.ReplotFasteners()
+    #Step three, for rest of the points, check their location
+    upper_boundary_curve=[[],[]]
+    for n in stgr_projected[boundary_stgr[0]]:
+        for m in range(0,2):
+            upper_boundary_curve[m].append(n[m])
+    lower_boundary_curve=[[],[]]
+    for n in stgr_projected[boundary_stgr[1]]:
+        for m in range(0,2):
+            lower_boundary_curve[m].append(n[m])
+    upper_interp=scipy.interpolate.interp1d(upper_boundary_curve[0],upper_boundary_curve[1])
+    lower_interp=scipy.interpolate.interp1d(lower_boundary_curve[0],lower_boundary_curve[1])
+    for n in ids_out:
+        if n in ids:
+            ids.remove(n)
+    for n in ids_in:
+        if n in ids:
+            ids.remove(n)
+    y_max=min(ys_upper)
+    y_min=max(ys_lower)
+    for n in ids:
+        validity=False
+        if f_projected[n][1]>=y_max:
+            #fastener locates to upper half
+            if f_projected[n][0]<stgr_projected[boundary_stgr[0]][0][0]:
+                if f_projected[n][1]<=stgr_projected[boundary_stgr[0]][0][1]:
+                    validity=True
+            elif f_projected[n][0]>stgr_projected[boundary_stgr[0]][-1][0]:
+                if f_projected[n][1]<=stgr_projected[boundary_stgr[0]][-1][1]:
+                    validity=True
+            else:
+                if f_projected[n][1]<=upper_interp(f_projected[n][0]):
+                    validity=True
+        elif f_projected[n][1]<=y_min:
+            #fastener locates at lower half
+            if f_projected[n][0]<stgr_projected[boundary_stgr[1]][0][0]:
+                if f_projected[n][1]>=stgr_projected[boundary_stgr[1]][0][1]:
+                    validity=True
+            elif f_projected[n][0]>stgr_projected[boundary_stgr[1]][-1][0]:
+                if f_projected[n][1]>=stgr_projected[boundary_stgr[1]][-1][1]:
+                    validity=True
+            else:
+                if f_projected[n][1]>=lower_interp(f_projected[n][0]):
+                    validity=True
+        if validity:
+            ids_in.append(n)
+    return ids_in
 
-    def DrawCross(self,pos,color_flag='black'):
-        pen=QPen()
-        pen.setCapStyle(Qt.FlatCap)
-        line1=QGraphicsLineItem(pos[0]-mdb.radius,pos[1],pos[0]+mdb.radius,pos[1])
-        line2=QGraphicsLineItem(pos[0],pos[1]-mdb.radius,pos[0],pos[1]+mdb.radius)
-        line1.setPen(pen)
-        line2.setPen(pen)
-        self.gscene.addItem(line1)
-        self.gscene.addItem(line2)
-        return [line1,line2]
+def GridFasteners(ids,f_projected,radius=10):
+    #This function divides the fasteners into grids to improve
+    #performance when checking the mouse hovring over action.
 
-    def ProjectFasteners(self,projection_plane_flag):
-        if projection_plane_flag=='xz':
-            self.projection_plane = 'xz'
-            self.projector=(0,1)
-            self.ori_point=[mdb.fastener_env[self.projector[0]][0],mdb.fastener_env[self.projector[1]][0]]
-
-    def GroupFasteners(self):
-        pass
-
-    def ReplotFasteners(self):
-        width=mdb.fastener_env[self.projector[0]][1]-mdb.fastener_env[self.projector[0]][0]
-        height=mdb.fastener_env[self.projector[1]][1]-mdb.fastener_env[self.projector[1]][0]
-        print(width,height)
-        self.gscene.addItem(QGraphicsLineItem(width,height,width+5,height+5))
-        for n in mdb.fasteners.keys():
-            pos=[mdb.fasteners[n]['coordinate'][self.projector[0]]-self.ori_point[0],
-                 mdb.fasteners[n]['coordinate'][self.projector[1]]-self.ori_point[1]]
-            self.DrawCross(pos)
-        #self.gview.setFixedSize(width,height)
-
-class FastenerViewer(QGraphicsView):
-    def __init__(self,parent):
-        super(FastenerViewer, self).__init__(parent)
-        self._zoom=0
-        self._parent=parent
-        self.setDragMode(QGraphicsView.ScrollHandDrag)
-        #self.setCursor(Qt.CrossCursor)
-        #QApplication.setOverrideCursor(Qt.CrossCursor)
-        self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
-        self.setResizeAnchor(QGraphicsView.AnchorUnderMouse)
-
-    def wheelEvent(self, event):
-        if event.angleDelta().y() > 0:
-            factor = 1.25
-            self._zoom += 1
-        else:
-            factor = 0.8
-            self._zoom -= 1
-        if self._zoom > 0:
-            self.scale(factor, factor)
-        elif self._zoom == 0:
-            self.scale(factor, factor)
-        else:
-            self._zoom = 0
-
-    def fitInView(self, scale=True):
-        rect = QRectF(self.scene().items()[0].pixmap().rect())
-        if not rect.isNull():
-            self.setSceneRect(rect)
-            if 1:
-                unity = self.transform().mapRect(QRectF(0, 0, 1, 1))
-                self.scale(1 / unity.width(), 1 / unity.height())
-                viewrect = self.viewport().rect()
-                scenerect = self.transform().mapRect(rect)
-                factor = min(viewrect.width() / scenerect.width(),
-                             viewrect.height() / scenerect.height())
-                self.scale(factor, factor)
-            self._zoom = 0
-
-    def mouseMoveEvent(self, event):
-        super().mouseMoveEvent(event)
-        pos_on_scene=self.mapToScene(event.pos())
-        #print(int(pos_on_scene.x()),int(pos_on_scene.y()))
-        #self._parent.CheckHighlight((int(pos_on_scene.x()),int(pos_on_scene.y())))
-
-    def mouseDoubleClickEvent(self, event):
-        super().mouseDoubleClickEvent(event)
-        pos_on_scene=self.mapToScene(event.pos())
-        self._parent.DoubleClicked((int(pos_on_scene.x()),int(pos_on_scene.y())))
-
-class DepthDia(QDialog):
-    def __init__(self,parent,rivet_id):
-        super(DepthDia, self).__init__(parent)
-        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
-        self.setWindowTitle('Sunken Value')
-
-        self._parent=parent
-        self._rivet_id=rivet_id
-
-        self.DefineGUIElemnets()
-        self.DrawLayout()
-
-    def DefineGUIElemnets(self):
-        self.ok_button=QPushButton('OK')
-        self.ok_button.clicked.connect(self.OKButtonClicked)
-        self.cancel_button=QPushButton('Cancel')
-        self.cancel_button.clicked.connect(self.CancelButtonClicked)
-        self.depth_edit=QLineEdit()
-        self.depth_edit.setValidator(QDoubleValidator())
-
-    def DrawLayout(self):
-        top_layout=QHBoxLayout()
-        top_layout.addWidget(QLabel('Please enter the sunken value (mm):'))
-        top_layout.addWidget(self.depth_edit)
-
-        button_layout=QHBoxLayout()
-        button_layout.addStretch()
-        button_layout.addWidget(self.ok_button)
-        button_layout.addWidget(self.cancel_button)
-
-        dia_layout=QVBoxLayout()
-        dia_layout.addLayout(top_layout)
-        dia_layout.addLayout(button_layout)
-
-        self.setLayout(dia_layout)
-
-    def OKButtonClicked(self):
-        depth=float(self.depth_edit.text())
-        self._parent.DepthRecevier(self._rivet_id,depth)
-        self.close()
-
-    def CancelButtonClicked(self):
-        self.close()
-        
-        
-        
-        
+    grid_number=10
+    #find boundaries
     
-import os
-
-#Program version
-version=(0,0,0)
-window=None
-
-#a list of nc objects
-ncs=[]
-
-#an integer of the current index of nc object in mdb.ncs
-current_nc_index=0
-
-#dic to store data of all fasteners
-#fasteners[id]['coordinate']=[x,y,z]
-#             ['type']=str
-#             ['zone']=str
-fasteners={}
-
-#list to store x-coordinate and name of frames
-#[index]['name']=str
-#       ['x']=float
-frames=[]
-
-#to be defined
-stringers=[]
-
-#to be defined
-zones=[]
-
-#
-fastener_env=[]
-
-#radius of the fastener marks in view
-radius=10.0
-
-
-
-import os
-
-import xlrd
-
-from .. import mdb
-
-def FetchFastenerInfo(wb):
-    # Fetch fastener information
-    #[id]['coordinate']=[x,y,z]
-    #    ['type']=str
-    #    ['zone']=str
-    rivet_info_sheet=wb.sheet_by_name('Rivet Info')
-    fastener_id=0
-    fasteners={}
-    row_no=rivet_info_sheet.nrows
-    for n in range(1,row_no):
-        #Determine end of the sheet
-        if rivet_info_sheet.cell(n,0).value=='':
-            break
-
-        #Store the information
-        fasteners[fastener_id]={}
-        fasteners[fastener_id]['type']=rivet_info_sheet.cell(n,5).value.upper()
-        xyz_columns=(6,7,8)
-        fasteners[fastener_id]['coordinate']=[]
-        for m in xyz_columns:
-            fasteners[fastener_id]['coordinate'].append(rivet_info_sheet.cell(n,m).value)
-        fasteners[fastener_id]['zone']=rivet_info_sheet.cell(n,10).value
-        fastener_id+=1
-    return fasteners
-
-def FetchFrames(wb):
-    #Fetch the Frames
-    #
-    fr_sheet=wb.sheet_by_name('FR')
-    frames=[]
-    row_no=fr_sheet.nrows
-    for n in range(1,row_no):
-        #Determine the end of the sheet
-        if fr_sheet.cell(n,0).value=='':
-            break
-
-        #Store the information
-        fr={}
-        fr['name']=fr_sheet.cell(n,0).value.upper()
-        fr['x']=float(fr_sheet.cell(n,1).value)
-        frames.append(fr)
-    return frames
-
-def FetchStringers(wb):
-    #Fetch the stringers
-    #
-    stgr_sheet=wb.sheet_by_name('STGR')
-
     return
-
-def FetchZones(wb):
-    return
-
-def ParseDatabase(db_path):
-    #Open databse and the validity check
-    if not os.path.exists(db_path):
-        return [-1,'No database file fund.']
-    try:
-        wb=xlrd.open_workbook(db_path)
-    except:
-        return [-2,'Database broken.']
-    tabs=('Rivet Info','FR','STGR','Zone')
-    tab_names=wb.sheet_names()
-    for n in tabs:
-        if not n in tab_names:
-            return [-3,'Incomplete database.']
-
-    fasteners=FetchFastenerInfo(wb)
-    frames=FetchFrames(wb)
-    stringers=FetchStringers(wb)
-    zones=FetchZones(wb)
-    return [0,[fasteners,frames,stringers,zones]]
-
-def Parser():
-    db_path = mdb.package_path + '/data/database.xlsx'
-    [status,flag]=ParseDatabase(db_path)
-    if not status==0:
-        return []
-    [mdb.fasteners, mdb.frames, mdb.stringers, mdb.zones]=flag
-
-    #Find fasteners envelope
-    fastener_ids=mdb.fasteners.keys()
-    xyzs=[[],[],[]]
-    for n in fastener_ids:
-        coor=mdb.fasteners[n]['coordinate']
-        for m in range(0,len(coor)):
-            xyzs[m].append(coor[m])
-    mdb.fastener_env=[]
-    for n in range(0,len(xyzs)):
-        mdb.fastener_env.append([min(xyzs[n]),max(xyzs[n])])
-    print(mdb.fastener_env)
-
-    #Check existence of drawing picture
-    #to be done.
